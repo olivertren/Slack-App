@@ -3,6 +3,7 @@ const axios = require("axios");
 const express = require("express");
 const app = express();
 
+const PORT = process.env.PORT
 const ROOT_URL = "https://slack.com/api/";
 const messagesEndpoint = "groups.history";
 const usersEndpoint = "users.info";
@@ -107,3 +108,5 @@ const getMonday = () => {
   }
   return convertMillisToSecs(prevMonday);
 };
+
+app.listen(PORT, () => console.log(`Server running on PORT ${PORT}`));
