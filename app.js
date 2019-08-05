@@ -12,7 +12,6 @@ const headers = {
 };
 
 // ROUTES
-
 app.get("/", (req, res) => {
   res.send("hello!")
 })
