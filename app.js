@@ -3,7 +3,7 @@ const axios = require("axios");
 const express = require("express");
 const app = express();
 
-const PORT = process.env.PORT
+const PORT = process.env.PORT;
 const ROOT_URL = "https://slack.com/api/";
 const messagesEndpoint = "groups.history";
 const usersEndpoint = "users.info";
@@ -11,21 +11,21 @@ const headers = {
   "Content-Type": "application/x-www-form-urlencoded"
 };
 
-// ROUTES
-app.get("/", (req, res) => {
-  res.send("hello!")
-})
+////////////
+// ROUTES //
+////////////
 
-app.post("/", (req, res) => {
-  getMessages(ROOT_URL)
-    .then(response => {
-      res.send(response)
-    })
-    .catch(err => console.log(err));
-})
+// app.get("/", (req, res) => {
+//   res.send("hello!")
+// })
 
+// app.post("/", (req, res) => {
+//   res.send("hi")
+// })
 
-// API FUNCTIONS
+///////////////////
+// API FUNCTIONS //
+///////////////////
 
 // GET MESSAGES
 const getMessages = url => {
@@ -45,47 +45,61 @@ const getMessages = url => {
       const {
         messages
       } = res.data;
-      const filtered = messages.filter(
+      return messages.filter(
         item =>
-        item.type === "message" && item.subtype !== "bot_add" &&
+        item.type === "message" &&
+        !item.subtype &&
         (convertSecondsToDay(item.ts) !== 0 &&
           convertSecondsToDay(item.ts) !== 6)
       );
-      return filtered;
-    }).then(res => {
-      return mapUserData(res);
-    }).catch(err => {
-      throw new Error(err)
+    })
+    .catch(err => {
+      throw new Error(err);
     });
 };
 
-
 // GET USER BY ID
 const getUserById = id => {
-  axios
+  return axios
     .get(
-      `${ROOT_URL}${usersEndpoint}`, {
-        params: {
-          token: process.env.USER_TOKEN,
-          user: id
-        }
-      },
+      `${ROOT_URL}${usersEndpoint}?token=${process.env.USER_TOKEN}&user=${id}`,
       headers
-    ).then(res => {
-      const realName = res.data.user.real_name;
-      return realName;
-    })
-}
-
-// OTHER HELPER FUNCTIONS
-const mapUserData = data => {
-  return data.map(item => ({
-    id: item.user,
-    text: item.text
-  }))
+    )
+    .then(res => {
+      const {
+        real_name,
+        name
+      } = res.data.user;
+      return {
+        realName: real_name,
+        username: name
+      };
+    });
 };
 
-// DATE FUNCTIONS
+//////////////////////
+// HELPER FUNCTIONS //
+//////////////////////
+
+const mapAndSort = data => {
+  return data
+    .map(item => ({
+      id: item.user,
+      text: item.text,
+      time: convertTextToNum(item.text),
+      dayOfYear: ""
+    }))
+    .filter(item => item.time !== "")
+    .sort((a, b) => (a.time > b.time ? 1 : -1));
+};
+
+const convertTextToNum = input =>
+  input.match(/\d/g) ? parseInt(input.match(/\d/g).join("")) : "";
+
+////////////////////
+// DATE FUNCTIONS //
+////////////////////
+
 const convertMillisToSecs = millis => millis / 1000;
 
 const convertSecondsToDay = seconds => {
@@ -108,4 +122,23 @@ const getMonday = () => {
   return convertMillisToSecs(prevMonday);
 };
 
-app.listen(PORT, () => console.log(`Server running on PORT ${PORT}`));
+
+
+///////////////////
+// CALL FUNCTION //
+///////////////////
+
+getMessages(ROOT_URL).then(data => {
+  console.log(data)
+  const sortedArray = mapAndSort(data);
+  const topFive = sortedArray.slice(0, 5).reverse();
+  const newTopFive = topFive
+    .map((item, index) => ({
+      ...item,
+      points: index + 1
+    }))
+    .reverse();
+  console.log(newTopFive);
+});
+
+// app.listen(PORT, () => console.log(`Server running on PORT ${PORT}`));
