@@ -35,7 +35,7 @@ app.post("/", (req, res) => {
       return combinedScores
     })
     .then(response => {
-      let newRes = response.map(person => arrToReturn.push(`*ID*: ${person.id} || *SCORE*: ${person.points}\n`))
+      let newRes = response.map(person => `*ID*: ${person.id} || *SCORE*: ${person.points}\n`)
       newRes = newRes.join("")
       res.send(newRes)
     })
