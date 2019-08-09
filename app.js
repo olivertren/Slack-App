@@ -22,22 +22,26 @@ app.get("/", (req, res) => {
 
 app.post("/", (req, res) => {
   getMessages(ROOT_URL).then(data => {
-    const sortedArray = mapAndSort(data);
-    const grouped = groupBy(sortedArray, "day_of_year").filter(item => item !== undefined)
-    const pointsArray = assignPoints(grouped);
-    const nowFlatten = [].concat(...pointsArray);
-    const combinedScores = nowFlatten.reduce((acc, elem) => {
-      if (acc.filter(el => el.id === elem.id)[0]) {
-        acc.filter((el) => el.id == elem.id)[0].points += elem.points;
-      } else acc.push(elem);
-      return acc
-    }, [])
-    res.send(combinedScores)
-    console.log(combinedScores)
-    return combinedScores
-  }).catch(err => {
-    throw new Error(err)
-  });
+      const sortedArray = mapAndSort(data);
+      const grouped = groupBy(sortedArray, "day_of_year").filter(item => item !== undefined)
+      const pointsArray = assignPoints(grouped);
+      const nowFlatten = [].concat(...pointsArray);
+      const combinedScores = nowFlatten.reduce((acc, elem) => {
+        if (acc.filter(el => el.id === elem.id)[0]) {
+          acc.filter((el) => el.id == elem.id)[0].points += elem.points;
+        } else acc.push(elem);
+        return acc
+      }, [])
+      return combinedScores
+    })
+    .then(response => {
+      let sendback = sendDataBackToSlack(response);
+      res.send(sendback)
+    })
+    .catch(err => {
+      throw new Error(err)
+    });
+
 })
 
 ///////////////////
@@ -94,50 +98,6 @@ const getUserById = id => {
     });
 };
 
-//////////////////////
-// HELPER FUNCTIONS //
-//////////////////////
-
-const mapAndSort = data => {
-  return data
-    .map(item => ({
-      id: item.user,
-      text: item.text,
-      time: convertTextToNum(item.text),
-      day_of_year: getDayofYear(item.ts)
-    }))
-    .filter(item => item.time !== "")
-    .sort((a, b) => (a.day_of_year > b.day_of_year ? 1 : -1));
-};
-
-const convertTextToNum = input =>
-  input.match(/\d/g) ? parseInt(input.match(/\d/g).join("")) : "";
-
-const groupBy = (arr, property) => {
-  return arr.reduce((memo, x) => {
-    if (!memo[x[property]]) {
-      memo[x[property]] = [];
-    }
-    memo[x[property]].push(x);
-    return memo;
-  }, []);
-}
-
-const assignPoints = data => {
-  return data.map(item => {
-    let newItem = item.sort((a, b) => (a.time > b.time ? 1 : -1));
-    let num = 5 || newItem.length;
-    const topFive = newItem.slice(0, num)
-    const newTopFive = topFive
-      .map((i, index) => ({
-        ...i,
-        points: 5 - index
-      }))
-      .reverse();
-    return newTopFive
-  })
-}
-
 ////////////////////
 // DATE FUNCTIONS //
 ////////////////////
@@ -173,10 +133,60 @@ const getDayofYear = inp => {
   return day;
 };
 
+//////////////////////
+// HELPER FUNCTIONS //
+//////////////////////
+
+const mapAndSort = data => {
+  return data
+    .map(item => ({
+      id: item.user,
+      text: item.text,
+      time: convertTextToNum(item.text),
+      day_of_year: getDayofYear(item.ts),
+    }))
+    .filter(item => item.time !== "")
+    .sort((a, b) => (a.day_of_year > b.day_of_year ? 1 : -1));
+};
+
+const convertTextToNum = input =>
+  input.match(/\d/g) ? parseInt(input.match(/\d/g).join("")) : "";
+
+const groupBy = (arr, property) => {
+  return arr.reduce((memo, x) => {
+    if (!memo[x[property]]) {
+      memo[x[property]] = [];
+    }
+    memo[x[property]].push(x);
+    return memo;
+  }, []);
+}
+
+const assignPoints = data => {
+  return data.map(item => {
+    let newItem = item.sort((a, b) => (a.time > b.time ? 1 : -1));
+    let num = 5 || newItem.length;
+    const topFive = newItem.slice(0, num)
+    const newTopFive = topFive
+      .map((i, index) => ({
+        ...i,
+        points: 5 - index
+      }))
+      .reverse();
+    return newTopFive
+  })
+}
+
+const sendDataBackToSlack = people => {
+  let peopleData = people.map(person => {
+    `*ID*: ${person.id} || *SCORE*: ${person.score}`
+  });
+  return peopleData
+}
+
 ///////////////////
 // CALL FUNCTION //
 ///////////////////
-
 
 
 app.listen(PORT, () => console.log(`Server running on PORT ${PORT}`));
