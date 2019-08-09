@@ -37,7 +37,7 @@ app.post("/", (req, res) => {
     .then(response => {
       let newRes = response.map((person, index) => `${index + 1}) *USER*: @${person.slack_handle} || *SCORE*: ${person.points}\n`)
       newRes = newRes.join("")
-      res.status(200).send("*==========WEEKLY LEADERBOARD==========*\n5pts for 1st place - 1pt for 5th \n\n" + newRes)
+      res.status(200).send("*==========WEEKLY LEADERBOARD==========*\n_5pts for 1st place - 1pt for 5th. Zero for rest_ \n\n" + newRes)
     })
     .catch(err => {
       throw new Error(err)
