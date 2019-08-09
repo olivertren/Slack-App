@@ -16,13 +16,29 @@ const headers = {
 // ROUTES //
 ////////////
 
-// app.get("/", (req, res) => {
-//   res.send("hello!")
-// })
+app.get("/", (req, res) => {
+  res.send("hello")
+})
 
-// app.post("/", (req, res) => {
-//   res.send("hi")
-// })
+app.post("/", (req, res) => {
+  getMessages(ROOT_URL).then(data => {
+    const sortedArray = mapAndSort(data);
+    const grouped = groupBy(sortedArray, "day_of_year").filter(item => item !== undefined)
+    const pointsArray = assignPoints(grouped);
+    const nowFlatten = [].concat(...pointsArray);
+    const combinedScores = nowFlatten.reduce((acc, elem) => {
+      if (acc.filter(el => el.id === elem.id)[0]) {
+        acc.filter((el) => el.id == elem.id)[0].points += elem.points;
+      } else acc.push(elem);
+      return acc
+    }, [])
+    res.send(combinedScores)
+    console.log(combinedScores)
+    return combinedScores
+  }).catch(err => {
+    throw new Error(err)
+  });
+})
 
 ///////////////////
 // API FUNCTIONS //
@@ -161,20 +177,6 @@ const getDayofYear = inp => {
 // CALL FUNCTION //
 ///////////////////
 
-getMessages(ROOT_URL).then(data => {
-  const sortedArray = mapAndSort(data);
-  const grouped = groupBy(sortedArray, "day_of_year").filter(item => item !== undefined)
-  const pointsArray = assignPoints(grouped);
-  const nowFlatten = [].concat(...pointsArray);
-  const combinedScores = nowFlatten.reduce((acc, elem) => {
-    if (acc.filter(el => el.id === elem.id)[0]) {
-      acc.filter((el) => el.id == elem.id)[0].points += elem.points;
-    } else acc.push(elem);
-    return acc
-  }, [])
-  console.log(combinedScores)
-}).catch(err => {
-  throw new Error(err)
-});
 
-// app.listen(PORT, () => console.log(`Server running on PORT ${PORT}`));
+
+app.listen(PORT, () => console.log(`Server running on PORT ${PORT}`));
