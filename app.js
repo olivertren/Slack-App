@@ -1,6 +1,7 @@
 require("dotenv").config();
 const axios = require("axios");
 const express = require("express");
+const fakeData = require("./fakedata");
 const app = express();
 
 const PORT = process.env.PORT;
@@ -87,14 +88,39 @@ const mapAndSort = data => {
       id: item.user,
       text: item.text,
       time: convertTextToNum(item.text),
-      dayOfYear: ""
+      day_of_year: getDayofYear(item.ts)
     }))
     .filter(item => item.time !== "")
-    .sort((a, b) => (a.time > b.time ? 1 : -1));
+    .sort((a, b) => (a.day_of_year > b.day_of_year ? 1 : -1));
 };
 
 const convertTextToNum = input =>
   input.match(/\d/g) ? parseInt(input.match(/\d/g).join("")) : "";
+
+const groupBy = (arr, property) => {
+  return arr.reduce((memo, x) => {
+    if (!memo[x[property]]) {
+      memo[x[property]] = [];
+    }
+    memo[x[property]].push(x);
+    return memo;
+  }, []);
+}
+
+const assignPoints = data => {
+  return data.map(item => {
+    let newItem = item.sort((a, b) => (a.time > b.time ? 1 : -1));
+    let num = 5 || newItem.length;
+    const topFive = newItem.slice(0, num)
+    const newTopFive = topFive
+      .map((i, index) => ({
+        ...i,
+        points: 5 - index
+      }))
+      .reverse();
+    return newTopFive
+  })
+}
 
 ////////////////////
 // DATE FUNCTIONS //
@@ -117,28 +143,38 @@ const getMonday = () => {
   if (day == 0) {
     prevMonday = d.setDate(d.getDate() - 6);
   } else {
-    prevMonday = d.setDate(d.getDate());
+    prevMonday = d.setDate(d.getDate() - day);
   }
   return convertMillisToSecs(prevMonday);
 };
 
-
+const getDayofYear = inp => {
+  let ts = new Date(inp * 1000);
+  let start = new Date(ts.getFullYear(), 0, 0);
+  let diff = ts - start;
+  let oneDay = 1000 * 60 * 60 * 24;
+  let day = Math.floor(diff / oneDay);
+  return day;
+};
 
 ///////////////////
 // CALL FUNCTION //
 ///////////////////
 
 getMessages(ROOT_URL).then(data => {
-  console.log(data)
   const sortedArray = mapAndSort(data);
-  const topFive = sortedArray.slice(0, 5).reverse();
-  const newTopFive = topFive
-    .map((item, index) => ({
-      ...item,
-      points: index + 1
-    }))
-    .reverse();
-  console.log(newTopFive);
+  const grouped = groupBy(sortedArray, "day_of_year").filter(item => item !== undefined)
+  const pointsArray = assignPoints(grouped);
+  const nowFlatten = [].concat(...pointsArray);
+  const combinedScores = nowFlatten.reduce((acc, elem) => {
+    if (acc.filter(el => el.id === elem.id)[0]) {
+      acc.filter((el) => el.id == elem.id)[0].points += elem.points;
+    } else acc.push(elem);
+    return acc
+  }, [])
+  console.log(combinedScores)
+}).catch(err => {
+  throw new Error(err)
 });
 
 // app.listen(PORT, () => console.log(`Server running on PORT ${PORT}`));
