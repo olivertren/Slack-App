@@ -37,7 +37,7 @@ app.post("/", (req, res) => {
     .then(response => {
       let newRes = response.map(person => `*ID*: ${person.id} || *SCORE*: ${person.points}\n`)
       newRes = newRes.join("")
-      res.send(newRes)
+      res.send("*==========WEEKLY LEADERBOARD==========*\n" + newRes)
     })
     .catch(err => {
       throw new Error(err)
