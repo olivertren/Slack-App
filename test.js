@@ -161,5 +161,3 @@ const assignPoints = data => {
     return newTopFive
   })
 }
-
-console.log(assignPoints(newData))

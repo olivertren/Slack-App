@@ -21,8 +21,8 @@ app.get("/", (req, res) => {
 })
 
 app.post("/", (req, res) => {
-  getMessages(ROOT_URL).then(data => {
-      const sortedArray = mapAndSort(data);
+  getMessages(ROOT_URL).then(async data => {
+      const sortedArray = await mapAndSort(data);
       const grouped = groupBy(sortedArray, "day_of_year").filter(item => item !== undefined)
       const pointsArray = assignPoints(grouped);
       const nowFlatten = [].concat(...pointsArray);
@@ -35,14 +35,13 @@ app.post("/", (req, res) => {
       return combinedScores
     })
     .then(response => {
-      let newRes = response.map(person => `*ID*: ${person.id} || *SCORE*: ${person.points}\n`)
+      let newRes = response.map((person, index) => `${index + 1}) *USER*: @${person.slack_handle} || *SCORE*: ${person.points}\n`)
       newRes = newRes.join("")
-      res.send("*==========WEEKLY LEADERBOARD==========*\n" + newRes)
+      res.status(200).send("*==========WEEKLY LEADERBOARD==========*\n" + newRes)
     })
     .catch(err => {
       throw new Error(err)
     });
-
 })
 
 ///////////////////
@@ -138,16 +137,23 @@ const getDayofYear = inp => {
 // HELPER FUNCTIONS //
 //////////////////////
 
-const mapAndSort = data => {
-  return data
-    .map(item => ({
+const mapAndSort = async data => {
+  const promises = await data.map(async item => {
+    const response = await getUserById(item.user);
+    return {
       id: item.user,
+      real_name: response.realName,
+      slack_handle: response.username,
       text: item.text,
       time: convertTextToNum(item.text),
-      day_of_year: getDayofYear(item.ts),
-    }))
+      day_of_year: getDayofYear(item.ts)
+    }
+  });
+  const response = await Promise.all(promises);
+  let filtered = response
     .filter(item => item.time !== "")
     .sort((a, b) => (a.day_of_year > b.day_of_year ? 1 : -1));
+  return filtered
 };
 
 const convertTextToNum = input =>
@@ -177,10 +183,5 @@ const assignPoints = data => {
     return newTopFive
   })
 }
-
-///////////////////
-// CALL FUNCTION //
-///////////////////
-
 
 app.listen(PORT, () => console.log(`Server running on PORT ${PORT}`));
