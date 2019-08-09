@@ -35,8 +35,8 @@ app.post("/", (req, res) => {
       return combinedScores
     })
     .then(response => {
-      let sendback = sendDataBackToSlack(response);
-      res.send(sendback)
+      let newRes = response.map(person => `*ID*: ${person.id} || *SCORE*: ${person.points}`)
+      res.send(newRes)
     })
     .catch(err => {
       throw new Error(err)
@@ -175,13 +175,6 @@ const assignPoints = data => {
       .reverse();
     return newTopFive
   })
-}
-
-const sendDataBackToSlack = people => {
-  let peopleData = people.map(person => {
-    `*ID*: ${person.id} || *SCORE*: ${person.score}`
-  });
-  return peopleData
 }
 
 ///////////////////
