@@ -16,7 +16,7 @@ const headers = {
 ////////////
 
 app.get("/", (req, res) => {
-  res.send("hello")
+  res.send("Klaviyo NYT Mini App")
 })
 
 app.post("/", (req, res) => {
