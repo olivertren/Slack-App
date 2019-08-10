@@ -1,12 +1,11 @@
 require("dotenv").config();
 const axios = require("axios");
 const express = require("express");
-const fakeData = require("./fakedata");
 const app = express();
 
 const PORT = process.env.PORT;
 const ROOT_URL = "https://slack.com/api/";
-const messagesEndpoint = "groups.history";
+const messagesEndpoint = "channels.history";
 const usersEndpoint = "users.info";
 const headers = {
   "Content-Type": "application/x-www-form-urlencoded"
@@ -35,9 +34,11 @@ app.post("/", (req, res) => {
       return combinedScores
     })
     .then(response => {
-      let newRes = response.map((person, index) => `${index + 1}) *USER*: @${person.slack_handle} || *SCORE*: ${person.points}\n`)
-      newRes = newRes.join("")
-      res.status(200).send("*==========WEEKLY LEADERBOARD==========*\n_5pts for 1st place - 1pt for 5th. Zero for rest_ \n\n" + newRes)
+      let newRes = response.sort((a, b) => (a.points < b.points ? 1 : -1));
+      newRes = newRes.map((person, index) => `${index + 1}) *USER*: @${person.slack_handle} || *SCORE*: ${person.points}\n`);
+      newRes = newRes.join("");
+      let sendToSlack = "*==========WEEKLY LEADERBOARD==========*\n_5pts for 1st place - 1pt for 5th. Zero for rest_ \n\n" + newRes;
+      res.status(200).send(sendToSlack)
     })
     .catch(err => {
       throw new Error(err)
@@ -55,7 +56,7 @@ const getMessages = url => {
       `${url}${messagesEndpoint}`, {
         params: {
           token: process.env.USER_TOKEN,
-          channel: "GLJC58SFM",
+          channel: "CLB4S6GNS",
           pretty: "1",
           oldest: getMonday()
         }
