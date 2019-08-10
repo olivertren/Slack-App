@@ -59,6 +59,7 @@ app.post("/", (req, res) => {
 ///////////////////
 // API FUNCTIONS //
 ///////////////////
+// URL https://slack.com/api/channels.history?token=token&channel=CLB4S6GNS&pretty=1&oldest=156765600&count=1000
 
 // GET MESSAGES
 const getMessages = url => {
