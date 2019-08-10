@@ -34,9 +34,7 @@ app.post("/", (req, res) => {
       return combinedScores
     })
     .then(response => {
-      let newRes = response.sort((a, b) => (a.points < b.points ? 1 : -1));
-      newRes = newRes.map((person, index) => `${index + 1}) *USER*: @${person.slack_handle} || *SCORE*: ${person.points}\n`);
-      newRes = newRes.join("");
+      let newRes = response.sort((a, b) => (a.points < b.points ? 1 : -1)).map((person, index) => `${index + 1}) *USER*: @${person.slack_handle} || *SCORE*: ${person.points}\n`).join("");
       let sendToSlack = "*==========WEEKLY LEADERBOARD==========*\n_5pts for 1st place - 1pt for 5th. Zero for rest_ \n\n" + newRes;
       res.status(200).send(sendToSlack)
     })
@@ -58,7 +56,8 @@ const getMessages = url => {
           token: process.env.USER_TOKEN,
           channel: "CLB4S6GNS",
           pretty: "1",
-          oldest: getMonday()
+          oldest: getMonday(),
+          count: 1000
         }
       },
       headers
@@ -67,6 +66,7 @@ const getMessages = url => {
       const {
         messages
       } = res.data;
+      console.log(messages)
       return messages.filter(
         item =>
         item.type === "message" &&
@@ -103,8 +103,6 @@ const getUserById = id => {
 // DATE FUNCTIONS //
 ////////////////////
 
-const convertMillisToSecs = millis => millis / 1000;
-
 const convertSecondsToDay = seconds => {
   let date = new Date(seconds * 1000);
   let localTime = date.toLocaleString();
@@ -113,16 +111,10 @@ const convertSecondsToDay = seconds => {
 };
 
 const getMonday = () => {
-  let d = new Date();
-  let day = d.getDay();
-  d.setHours(0, 0, 0, 0);
-  let prevMonday;
-  if (day == 0) {
-    prevMonday = d.setDate(d.getDate() - 6);
-  } else {
-    prevMonday = d.setDate(d.getDate() - day);
-  }
-  return convertMillisToSecs(prevMonday);
+  let prevMonday = new Date();
+  prevMonday.setHours(0, 0, 0, 0);
+  let mondayMidnight = prevMonday.setDate(prevMonday.getDate() - (prevMonday.getDay() + 6) % 7);
+  return mondayMidnight / 1000
 };
 
 const getDayofYear = inp => {
@@ -143,10 +135,8 @@ const mapAndSort = async data => {
     const response = await getUserById(item.user);
     return {
       id: item.user,
-      real_name: response.realName,
       slack_handle: response.username,
-      text: item.text,
-      time: convertTextToNum(item.text),
+      time: convertTextToNum(item.text).toString().length > 3 ? parseInt(convertTextToNum(item.text).toString().slice(0, -1)) : convertTextToNum(item.text),
       day_of_year: getDayofYear(item.ts)
     }
   });
