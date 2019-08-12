@@ -41,7 +41,7 @@ app.post("/", (req, res) => {
         .sort((a, b) => (a.points < b.points ? 1 : -1))
         .map(
           (person, index) =>
-            `${index + 1}) *USER*: @${person.slack_handle} || *SCORE*: ${
+          `${index + 1}) *USER*: @${person.slack_handle} || *SCORE*: ${
               person.points
             }\n`
         )
@@ -59,17 +59,16 @@ app.post("/", (req, res) => {
 ///////////////////
 // API FUNCTIONS //
 ///////////////////
-// URL https://slack.com/api/channels.history?token=token&channel=CLB4S6GNS&pretty=1&oldest=156765600&count=1000
+// URL https://slack.com/api/channels.history?token=token&channel=channel&pretty=1&oldest=156765600&count=1000
 
 // GET MESSAGES
 const getMessages = url => {
   return axios
     .get(
-      `${url}${messagesEndpoint}`,
-      {
+      `${url}${messagesEndpoint}`, {
         params: {
           token: process.env.USER_TOKEN,
-          channel: "CLB4S6GNS",
+          channel: process.env.CHANNEL,
           pretty: "1",
           oldest: getMonday(),
           count: 1000
@@ -78,13 +77,15 @@ const getMessages = url => {
       headers
     )
     .then(res => {
-      const { messages } = res.data;
+      const {
+        messages
+      } = res.data;
       return messages.filter(
         item =>
-          item.type === "message" &&
-          !item.subtype &&
-          (convertSecondsToDay(item.ts) !== 0 &&
-            convertSecondsToDay(item.ts) !== 6)
+        item.type === "message" &&
+        !item.subtype &&
+        (convertSecondsToDay(item.ts) !== 0 &&
+          convertSecondsToDay(item.ts) !== 6)
       );
     })
     .catch(err => {
@@ -100,7 +101,10 @@ const getUserById = id => {
       headers
     )
     .then(res => {
-      const { real_name, name } = res.data.user;
+      const {
+        real_name,
+        name
+      } = res.data.user;
       return {
         realName: real_name,
         username: name
@@ -147,14 +151,13 @@ const mapAndSort = async data => {
     return {
       id: item.user,
       slack_handle: response.username,
-      time:
-        convertTextToNum(item.text).toString().length > 3
-          ? parseInt(
-              convertTextToNum(item.text)
-                .toString()
-                .slice(0, -1)
-            )
-          : convertTextToNum(item.text),
+      time: convertTextToNum(item.text).toString().length > 3 ?
+        parseInt(
+          convertTextToNum(item.text)
+          .toString()
+          .slice(0, -1)
+        ) :
+        convertTextToNum(item.text),
       day_of_year: getDayofYear(item.ts)
     };
   });
