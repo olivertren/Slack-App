@@ -16,12 +16,13 @@ const headers = {
 ////////////
 
 app.get("/", (req, res) => {
-  res.send("Klaviyo NYT Mini App");
+  res.send("<h1>Klaviyo NYT Mini App</h1>");
 });
 
 app.post("/", (req, res) => {
   getMessages(ROOT_URL)
     .then(async data => {
+      console.log("data", data);
       const sortedArray = await mapAndSort(data);
       const grouped = groupBy(sortedArray, "day_of_year").filter(
         item => item !== undefined
@@ -82,7 +83,7 @@ const getMessages = url => {
       } = res.data;
       return messages.filter(
         item =>
-        item.type === "message" &&
+        item.type === "message" && !item.parent_user_id &&
         !item.subtype &&
         (convertSecondsToDay(item.ts) !== 0 &&
           convertSecondsToDay(item.ts) !== 6)
@@ -156,8 +157,7 @@ const mapAndSort = async data => {
           convertTextToNum(item.text)
           .toString()
           .slice(0, -1)
-        ) :
-        convertTextToNum(item.text),
+        ) : convertTextToNum(item.text),
       day_of_year: getDayofYear(item.ts)
     };
   });
@@ -169,7 +169,7 @@ const mapAndSort = async data => {
 };
 
 const convertTextToNum = input =>
-  input.match(/\d/g) ? parseInt(input.match(/\d/g).join("")) : "";
+  input.match(/\d/g) && !input.match(/@/g) ? parseInt(input.match(/\d/g).join("")) : "";
 
 const groupBy = (arr, property) => {
   return arr.reduce((memo, x) => {
