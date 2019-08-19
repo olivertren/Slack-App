@@ -169,7 +169,7 @@ const mapAndSort = async data => {
 };
 
 const convertTextToNum = input =>
-  input.match(/\d/g) && !input.match(/@/g) ? parseInt(input.match(/\d/g).join("")) : "";
+  input.match(new RegExp(/\d?\d\d/)) && !input.match(/@/g) ? parseInt(input.match(/\d/g).join("")) : "";
 
 const groupBy = (arr, property) => {
   return arr.reduce((memo, x) => {
