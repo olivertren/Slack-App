@@ -37,11 +37,12 @@ app.post("/", (req, res) => {
       return combinedScores;
     })
     .then(response => {
+      console.log(response)
       let newRes = response
         .sort((a, b) => (a.points < b.points ? 1 : -1))
         .map(
           (person, index) =>
-          `${index + 1}) *USER*: <@${person.id}> || *SCORE*: ${
+          `${index + 1}) *USER*: @${person.slack_handle} || *SCORE*: ${
               person.points
             }\n`
         )
