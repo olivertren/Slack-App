@@ -22,7 +22,6 @@ app.get("/", (req, res) => {
 app.post("/", (req, res) => {
   getMessages(ROOT_URL)
     .then(async data => {
-      console.log("data", data);
       const sortedArray = await mapAndSort(data);
       const grouped = groupBy(sortedArray, "day_of_year").filter(
         item => item !== undefined
@@ -42,14 +41,18 @@ app.post("/", (req, res) => {
         .sort((a, b) => (a.points < b.points ? 1 : -1))
         .map(
           (person, index) =>
-          `${index + 1}) *USER*: @${person.slack_handle} || *SCORE*: ${
+          `${index + 1}) *USER*: <@${person.id}> || *SCORE*: ${
               person.points
             }\n`
         )
         .join("");
-      let sendToSlack =
-        "*==========WEEKLY LEADERBOARD==========*\n_5pts for 1st place - 1pt for 5th. Zero for rest_ \n\n" +
-        newRes;
+      let sendToSlack = {
+        "response_type": "in_channel",
+        "text": "*==========WEEKLY LEADERBOARD==========*\n_5pts for 1st place - 1pt for 5th. Zero for rest_",
+        "attachments": [{
+          "text": newRes
+        }]
+      }
       res.status(200).send(sendToSlack);
     })
     .catch(err => {
